@@ -1,0 +1,31 @@
+{
+  "name": "ai-stem-separator",
+  "version": "1.0.0",
+  "description": "AI-powered stem separator using Demucs",
+  "main": "index.js",
+  "scripts": {
+    "dev": "uvicorn stem_separator_api:app --reload --host 0.0.0.0 --port 8000",
+    "start": "uvicorn stem_separator_api:app --host 0.0.0.0 --port 8000",
+    "test": "python -m pytest",
+    "docker:build": "docker build -t stem-separator .",
+    "docker:run": "docker run -p 8000:8000 stem-separator",
+    "docker:compose": "docker-compose up --build"
+  },
+  "keywords": [
+    "ai",
+    "audio",
+    "stem-separation",
+    "demucs",
+    "music",
+    "machine-learning"
+  ],
+  "author": "Your Name",
+  "license": "MIT",
+  "dependencies": {
+    "lucide-react": "^0.294.0"
+  },
+  "devDependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  }
+}

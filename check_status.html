@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Check Status</title>
+</head>
+<body>
+    <h1>Manual Status Check</h1>
+    <button onclick="checkStatus()">Check Latest Job Status</button>
+    <div id="result"></div>
+
+    <script>
+        async function checkStatus() {
+            try {
+                const response = await fetch('http://localhost:8000/api/jobs');
+                const data = await response.json();
+                
+                if (data.jobs && data.jobs.length > 0) {
+                    const latestJob = data.jobs[data.jobs.length - 1];
+                    const resultDiv = document.getElementById('result');
+                    resultDiv.innerHTML = `
+                        <h2>Latest Job Status</h2>
+                        <p><strong>Status:</strong> ${latestJob.status}</p>
+                        <p><strong>Filename:</strong> ${latestJob.filename}</p>
+                        <p><strong>Model:</strong> ${latestJob.model}</p>
+                        ${latestJob.status === 'completed' ? `
+                            <h3>Download Links:</h3>
+                            ${Object.entries(latestJob.stems).map(([stem, info]) => 
+                                `<p><a href="http://localhost:8000/api/download/${latestJob.id}/${stem}" target="_blank">Download ${stem}</a></p>`
+                            ).join('')}
+                        ` : ''}
+                        ${latestJob.error ? `<p><strong>Error:</strong> ${latestJob.error}</p>` : ''}
+                    `;
+                } else {
+                    document.getElementById('result').innerHTML = '<p>No jobs found</p>';
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p>Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

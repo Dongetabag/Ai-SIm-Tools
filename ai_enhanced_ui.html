@@ -1,0 +1,1897 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AISim Tools - AI Enhanced</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #f5576c 75%, #4facfe 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+            min-height: 100vh;
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .glass-button {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .glass-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .ai-glow {
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            animation: aiPulse 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes aiPulse {
+            from { box-shadow: 0 0 20px rgba(0, 255, 255, 0.3); }
+            to { box-shadow: 0 0 30px rgba(0, 255, 255, 0.6); }
+        }
+        
+        .tab-active {
+            background: rgba(255, 255, 255, 0.3);
+            border-bottom: 2px solid rgba(255, 255, 255, 0.8);
+        }
+        
+        .status-processing {
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useRef } = React;
+
+        const App = () => {
+            const [activeTab, setActiveTab] = useState('separator');
+            const [jobs, setJobs] = useState({});
+            const [aiServices, setAiServices] = useState({});
+
+            // API base URL
+            const API_BASE = 'http://localhost:8000';
+
+            useEffect(() => {
+                checkAiServices();
+            }, []);
+
+            const checkAiServices = async () => {
+                try {
+                    const response = await fetch(`${API_BASE}/`);
+                    const data = await response.json();
+                    setAiServices(data.ai_services || {});
+                } catch (error) {
+                    console.error('Error checking AI services:', error);
+                }
+            };
+
+            const pollJobStatus = async (jobId, jobType = 'separation') => {
+                try {
+                    const response = await fetch(`${API_BASE}/api/status/${jobId}`);
+                    const status = await response.json();
+                    
+                    setJobs(prev => ({
+                        ...prev,
+                        [jobId]: status
+                    }));
+                    
+                    return status.status;
+                } catch (error) {
+                    console.error('Error polling job status:', error);
+                    return 'failed';
+                }
+            };
+
+            const startPolling = (jobId, jobType = 'separation') => {
+                const interval = setInterval(async () => {
+                    const status = await pollJobStatus(jobId, jobType);
+                    if (status === 'completed' || status === 'failed') {
+                        clearInterval(interval);
+                    }
+                }, 2000);
+            };
+
+            const TabButton = ({ id, icon, label, active, onClick }) => (
+                <button
+                    onClick={onClick}
+                    className={`flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-300 ${
+                        active ? 'tab-active text-white' : 'text-white/80 hover:text-white hover:bg-white/20'
+                    }`}
+                >
+                    <i className={`fas ${icon} text-lg`}></i>
+                    <span className="font-medium">{label}</span>
+                </button>
+            );
+
+            const AiStatusIndicator = ({ service, status }) => (
+                <div className={`inline-flex items-center space-x-2 px-3 py-1 rounded-full text-sm ${
+                    status.includes('Connected') ? 'bg-green-500/20 text-green-300' : 'bg-red-500/20 text-red-300'
+                }`}>
+                    <i className={`fas ${status.includes('Connected') ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+                    <span>{service}</span>
+                </div>
+            );
+
+            return (
+                <div className="min-h-screen p-6">
+                    {/* Header */}
+                    <div className="glass-card rounded-2xl p-8 mb-8">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <h1 className="text-4xl font-bold text-white mb-2">
+                                    <i className="fas fa-magic text-cyan-300 mr-3"></i>
+                                    AISim Tools - AI Enhanced
+                                </h1>
+                                <p className="text-white/80 text-lg">Professional AI-powered tools with OpenAI and Google AI integration</p>
+                            </div>
+                            <div className="flex space-x-2">
+                                <AiStatusIndicator service="OpenAI" status={aiServices.openai || "❌ Not configured"} />
+                                <AiStatusIndicator service="Google AI" status={aiServices.google_ai || "❌ Not configured"} />
+                                <AiStatusIndicator service="Anthropic" status={aiServices.anthropic || "❌ Not configured"} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Navigation Tabs */}
+                    <div className="glass-card rounded-2xl p-6 mb-8">
+                        <div className="flex flex-wrap gap-2">
+                            <TabButton
+                                id="separator"
+                                icon="fa-music"
+                                label="AI Audio Separator"
+                                active={activeTab === 'separator'}
+                                onClick={() => setActiveTab('separator')}
+                            />
+                            <TabButton
+                                id="youtube"
+                                icon="fa-youtube"
+                                label="YouTube Converter"
+                                active={activeTab === 'youtube'}
+                                onClick={() => setActiveTab('youtube')}
+                            />
+                            <TabButton
+                                id="pdf"
+                                icon="fa-file-pdf"
+                                label="PDF Tools"
+                                active={activeTab === 'pdf'}
+                                onClick={() => setActiveTab('pdf')}
+                            />
+                            <TabButton
+                                id="image"
+                                icon="fa-image"
+                                label="AI Image Enhancer"
+                                active={activeTab === 'image'}
+                                onClick={() => setActiveTab('image')}
+                            />
+                            <TabButton
+                                id="video"
+                                icon="fa-video"
+                                label="AI Video Generator"
+                                active={activeTab === 'video'}
+                                onClick={() => setActiveTab('video')}
+                            />
+                            <TabButton
+                                id="ai"
+                                icon="fa-brain"
+                                label="AI Analysis"
+                                active={activeTab === 'ai'}
+                                onClick={() => setActiveTab('ai')}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Tab Content */}
+                    <div className="glass-card rounded-2xl p-8">
+                        {activeTab === 'separator' && <AudioSeparatorTab jobs={jobs} startPolling={startPolling} apiBase={API_BASE} />}
+                        {activeTab === 'youtube' && <YouTubeTab jobs={jobs} startPolling={startPolling} apiBase={API_BASE} />}
+                        {activeTab === 'pdf' && <PdfTab jobs={jobs} startPolling={startPolling} apiBase={API_BASE} />}
+                        {activeTab === 'image' && <ImageTab jobs={jobs} startPolling={startPolling} apiBase={API_BASE} />}
+                        {activeTab === 'video' && <VideoTab jobs={jobs} startPolling={startPolling} apiBase={API_BASE} />}
+                        {activeTab === 'ai' && <AiAnalysisTab apiBase={API_BASE} />}
+                    </div>
+
+                    {/* Global Download Center */}
+                    {Object.values(jobs).some(job => job.status === 'completed') && (
+                        <div className="mt-8 glass-card rounded-2xl p-6">
+                            <div className="flex items-center justify-between mb-4">
+                                <h3 className="text-xl font-bold text-white flex items-center">
+                                    <i className="fas fa-download text-cyan-300 mr-3"></i>
+                                    Download Center
+                                </h3>
+                                <button
+                                    onClick={() => {
+                                        const completedJobs = Object.values(jobs).filter(job => job.status === 'completed');
+                                        completedJobs.forEach((job, index) => {
+                                            setTimeout(() => {
+                                                if (job.file_path) {
+                                                    const link = document.createElement('a');
+                                                    const jobType = job.type || 'separation';
+                                                    link.href = `${API_BASE}/api/${
+                                                        jobType === 'youtube_conversion' ? 'youtube' :
+                                                        jobType === 'pdf_merge' ? 'pdf' :
+                                                        jobType === 'image_enhance' ? 'image' :
+                                                        jobType === 'video_generation' ? 'video' :
+                                                        'download'
+                                                    }/download/${job.job_id}`;
+                                                    link.download = job.filename || 'output';
+                                                    link.click();
+                                                }
+                                            }, index * 200);
+                                        });
+                                    }}
+                                    className="glass-button px-4 py-2 rounded-lg text-white text-sm hover:bg-white/30 transition-all flex items-center"
+                                >
+                                    <i className="fas fa-download mr-2"></i>
+                                    Download All Completed
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {Object.values(jobs)
+                                    .filter(job => job.status === 'completed')
+                                    .map(job => (
+                                        <div key={job.job_id} className="glass-card rounded-lg p-4 border border-white/20 hover:border-white/40 transition-all">
+                                            <div className="flex items-center justify-between mb-3">
+                                                <div className="flex-1 min-w-0">
+                                                    <span className="text-white font-medium text-sm truncate block">
+                                                        {job.filename || 'Output File'}
+                                                    </span>
+                                                    <span className="text-white/60 text-xs truncate block">
+                                                        {job.type === 'separation' ? 'Audio Separation' :
+                                                         job.type === 'youtube_conversion' ? 'YouTube Audio' :
+                                                         job.type === 'pdf_merge' ? 'PDF Document' :
+                                                         job.type === 'image_enhance' ? 'Enhanced Image' :
+                                                         job.type === 'video_generation' ? 'Generated Video' :
+                                                         'Processed File'}
+                                                    </span>
+                                                </div>
+                                                <span className={`px-2 py-1 rounded-full text-xs ml-2 ${
+                                                    job.status === 'completed' ? 'bg-green-500/20 text-green-300' :
+                                                    'bg-yellow-500/20 text-yellow-300'
+                                                }`}>
+                                                    {job.status}
+                                                </span>
+                                            </div>
+                                            
+                                            {/* Individual Download Options */}
+                                            <div className="space-y-2">
+                                                {/* Main File Download */}
+                                                {job.file_path && (
+                                                    <div className="flex items-center justify-between">
+                                                        <span className="text-white/80 text-xs">Main File:</span>
+                                                        <a
+                                                            href={`${API_BASE}/api/${
+                                                                job.type === 'youtube_conversion' ? 'youtube' :
+                                                                job.type === 'pdf_merge' ? 'pdf' :
+                                                                job.type === 'image_enhance' ? 'image' :
+                                                                job.type === 'video_generation' ? 'video' :
+                                                                'download'
+                                                            }/download/${job.job_id}`}
+                                                            download={job.filename || 'output'}
+                                                            className="glass-button px-3 py-2 rounded-lg text-white text-xs hover:bg-white/30 transition-all flex items-center"
+                                                        >
+                                                            <i className="fas fa-download mr-2"></i>
+                                                            Download
+                                                        </a>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Individual Stem Downloads */}
+                                                {job.stems && Object.keys(job.stems).length > 0 && (
+                                                    <div>
+                                                        <div className="flex items-center justify-between mb-2">
+                                                            <span className="text-white/80 text-xs">Audio Stems:</span>
+                                                            <button
+                                                                onClick={() => {
+                                                                    Object.keys(job.stems).forEach((stem, index) => {
+                                                                        setTimeout(() => {
+                                                                            const link = document.createElement('a');
+                                                                            link.href = `${API_BASE}/api/download/${job.job_id}/${stem}`;
+                                                                            link.download = `${job.filename || 'audio'}_${stem}.wav`;
+                                                                            link.click();
+                                                                        }, index * 100);
+                                                                    });
+                                                                }}
+                                                                className="glass-button px-3 py-2 rounded-lg text-white text-xs hover:bg-white/30 transition-all flex items-center"
+                                                            >
+                                                                <i className="fas fa-download mr-2"></i>
+                                                                All Stems
+                                                            </button>
+                                                        </div>
+                                                        <div className="grid grid-cols-2 gap-1">
+                                                            {Object.keys(job.stems).map(stem => (
+                                                                <a
+                                                                    key={stem}
+                                                                    href={`${API_BASE}/api/download/${job.job_id}/${stem}`}
+                                                                    download={`${job.filename || 'audio'}_${stem}.wav`}
+                                                                    className="glass-button px-2 py-1 rounded text-white text-xs hover:bg-white/30 transition-all flex items-center justify-center"
+                                                                >
+                                                                    <i className="fas fa-download mr-1"></i>
+                                                                    {stem.charAt(0).toUpperCase() + stem.slice(1)}
+                                                                </a>
+                                                            ))}
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                
+                                                {/* Format and Quality Info */}
+                                                {(job.audio_format || job.video_format || job.quality) && (
+                                                    <div className="text-white/60 text-xs pt-2 border-t border-white/10">
+                                                        {job.audio_format && (
+                                                            <div>Format: {job.audio_format.toUpperCase()} ({job.quality})</div>
+                                                        )}
+                                                        {job.video_format && (
+                                                            <div>Format: {job.video_format.toUpperCase()} ({job.quality})</div>
+                                                        )}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Audio Separator Tab
+    const AudioSeparatorTab = ({ jobs, startPolling, apiBase }) => {
+        const [file, setFile] = useState(null);
+        const [selectedInstruments, setSelectedInstruments] = useState(['vocals', 'drums', 'bass', 'other']);
+        const [aiAnalysis, setAiAnalysis] = useState(false);
+        const [audioFormat, setAudioFormat] = useState('wav');
+        const [quality, setQuality] = useState('lossless');
+        const [processing, setProcessing] = useState(false);
+
+            const instruments = [
+                { id: 'vocals', name: 'Vocals', icon: 'fa-microphone' },
+                { id: 'drums', name: 'Drums', icon: 'fa-drum' },
+                { id: 'bass', name: 'Bass', icon: 'fa-music' },
+                { id: 'other', name: 'Other Instruments', icon: 'fa-guitar' },
+                { id: 'background', name: 'Background Vocals', icon: 'fa-users' },
+                { id: 'piano', name: 'Piano/Keys', icon: 'fa-piano-keyboard' },
+                { id: 'strings', name: 'Strings', icon: 'fa-violin' },
+                { id: 'keys', name: 'Synthesizer', icon: 'fa-keyboard' }
+            ];
+
+            const handleFileChange = (e) => {
+                setFile(e.target.files[0]);
+            };
+
+            const handleInstrumentToggle = (instrumentId) => {
+                setSelectedInstruments(prev => 
+                    prev.includes(instrumentId) 
+                        ? prev.filter(id => id !== instrumentId)
+                        : [...prev, instrumentId]
+                );
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                console.log('Audio separation form submitted');
+                
+                if (!file) {
+                    alert('Please select an audio file');
+                    return;
+                }
+
+                setProcessing(true);
+                console.log('Starting audio separation for file:', file.name);
+
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('instruments', selectedInstruments.join(','));
+        formData.append('ai_analysis', aiAnalysis);
+        formData.append('audio_format', audioFormat);
+        formData.append('quality', quality);
+
+                try {
+                    console.log('Sending request to:', `${apiBase}/api/separate`);
+                    const response = await fetch(`${apiBase}/api/separate`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Separation result:', result);
+                    
+                    if (result.job_id) {
+                        console.log('Starting polling for job:', result.job_id);
+                        startPolling(result.job_id, 'separation');
+                    } else {
+                        alert('Failed to start separation: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error starting separation:', error);
+                    alert('Error starting separation: ' + error.message);
+                } finally {
+                    setProcessing(false);
+                }
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                        <i className="fas fa-music text-cyan-300 mr-3"></i>
+                        AI-Enhanced Audio Separation
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        {/* File Upload */}
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">Audio File</label>
+                            <input
+                                type="file"
+                                accept="audio/*"
+                                onChange={handleFileChange}
+                                className="w-full p-4 rounded-lg glass-button text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white/20 file:text-white"
+                            />
+                        </div>
+
+                        {/* Instrument Selection */}
+                        <div>
+                            <label className="block text-white/90 mb-3 font-medium">Select Instruments to Separate</label>
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                {instruments.map(instrument => (
+                                    <button
+                                        key={instrument.id}
+                                        type="button"
+                                        onClick={() => handleInstrumentToggle(instrument.id)}
+                                        className={`p-4 rounded-lg transition-all duration-300 ${
+                                            selectedInstruments.includes(instrument.id)
+                                                ? 'glass-button text-white ai-glow'
+                                                : 'bg-white/10 text-white/70 hover:bg-white/20'
+                                        }`}
+                                    >
+                                        <i className={`fas ${instrument.icon} text-lg mb-2 block`}></i>
+                                        <span className="text-sm font-medium">{instrument.name}</span>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* AI Analysis Option */}
+                        <div className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                id="aiAnalysis"
+                                checked={aiAnalysis}
+                                onChange={(e) => setAiAnalysis(e.target.checked)}
+                                className="w-5 h-5 text-cyan-300 rounded"
+                            />
+                            <label htmlFor="aiAnalysis" className="text-white/90">
+                                <i className="fas fa-brain text-cyan-300 mr-2"></i>
+                                Enable AI Audio Analysis
+                            </label>
+                        </div>
+
+                        {/* Format Selection */}
+                        <div className="mt-6">
+                            <label className="block text-white/90 text-sm font-medium mb-3">
+                                <i className="fas fa-cog mr-2"></i>
+                                Output Format & Quality
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-white/80 text-xs mb-2">Audio Format</label>
+                                    <select
+                                        value={audioFormat}
+                                        onChange={(e) => setAudioFormat(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                                    >
+                                        <option value="wav">WAV (Uncompressed)</option>
+                                        <option value="flac">FLAC (Lossless)</option>
+                                        <option value="mp3">MP3 (Compressed)</option>
+                                        <option value="aac">AAC (High Quality)</option>
+                                        <option value="aiff">AIFF (Apple Lossless)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-white/80 text-xs mb-2">Quality</label>
+                                    <select
+                                        value={quality}
+                                        onChange={(e) => setQuality(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                                    >
+                                        <option value="lossless">Lossless (Studio Quality)</option>
+                                        <option value="high">High (320kbps)</option>
+                                        <option value="standard">Standard (192kbps)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Submit Button */}
+                        <button
+                            type="submit"
+                            disabled={!file || processing}
+                            className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed relative overflow-hidden"
+                        >
+                            {processing ? (
+                                <>
+                                    <div className="flex items-center justify-center">
+                                        <div className="flex space-x-1 mr-3">
+                                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                            <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                        </div>
+                                        <span>Processing Audio...</span>
+                                    </div>
+                                    <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent animate-pulse"></div>
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-magic mr-2"></i>
+                                    Start AI-Enhanced Separation
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Job Status */}
+                    <JobStatusDisplay jobs={jobs} jobType="separation" apiBase={apiBase} />
+                </div>
+            );
+        };
+
+        // YouTube Converter Tab
+    const YouTubeTab = ({ jobs, startPolling, apiBase }) => {
+        const [url, setUrl] = useState('');
+        const [audioFormat, setAudioFormat] = useState('wav');
+        const [quality, setQuality] = useState('lossless');
+        const [processing, setProcessing] = useState(false);
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                console.log('YouTube conversion form submitted');
+                
+                if (!url) {
+                    alert('Please enter a YouTube URL');
+                    return;
+                }
+
+                setProcessing(true);
+                console.log('Starting YouTube conversion for URL:', url);
+
+            const formData = new FormData();
+            formData.append('url', url);
+            formData.append('audio_format', audioFormat);
+            formData.append('quality', quality);
+
+                try {
+                    console.log('Sending request to:', `${apiBase}/api/youtube/convert`);
+                    const response = await fetch(`${apiBase}/api/youtube/convert`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('Conversion result:', result);
+                    
+                    if (result.job_id) {
+                        console.log('Starting polling for job:', result.job_id);
+                        startPolling(result.job_id, 'youtube_conversion');
+                        setUrl(''); // Clear the form
+                    } else {
+                        alert('Failed to start conversion: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error starting conversion:', error);
+                    alert('Error starting conversion: ' + error.message);
+                }
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                        <i className="fas fa-youtube text-red-300 mr-3"></i>
+                        YouTube to WAV Converter
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">YouTube URL</label>
+                            <input
+                                type="url"
+                                value={url}
+                                onChange={(e) => setUrl(e.target.value)}
+                                placeholder="https://www.youtube.com/watch?v=..."
+                                className="w-full p-4 rounded-lg glass-button text-white placeholder-white/50"
+                            />
+                        </div>
+
+                        {/* Format Selection */}
+                        <div className="mb-6">
+                            <label className="block text-white/90 text-sm font-medium mb-3">
+                                <i className="fas fa-cog mr-2"></i>
+                                Output Format & Quality
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-white/80 text-xs mb-2">Audio Format</label>
+                                    <select
+                                        value={audioFormat}
+                                        onChange={(e) => setAudioFormat(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                                    >
+                                        <option value="wav">WAV (Uncompressed)</option>
+                                        <option value="flac">FLAC (Lossless)</option>
+                                        <option value="mp3">MP3 (Compressed)</option>
+                                        <option value="aac">AAC (High Quality)</option>
+                                        <option value="aiff">AIFF (Apple Lossless)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-white/80 text-xs mb-2">Quality</label>
+                                    <select
+                                        value={quality}
+                                        onChange={(e) => setQuality(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                                    >
+                                        <option value="lossless">Lossless (Studio Quality)</option>
+                                        <option value="high">High (320kbps)</option>
+                                        <option value="standard">Standard (192kbps)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={!url}
+                            className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i className="fas fa-download mr-2"></i>
+                            Convert to WAV
+                        </button>
+                    </form>
+
+                    <JobStatusDisplay jobs={jobs} jobType="youtube_conversion" apiBase={apiBase} />
+                </div>
+            );
+        };
+
+        // PDF Tools Tab
+        const PdfTab = ({ jobs, startPolling, apiBase }) => {
+            const [files, setFiles] = useState([]);
+            const [aiAnalysis, setAiAnalysis] = useState(false);
+
+            const handleFileChange = (e) => {
+                setFiles(Array.from(e.target.files));
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                console.log('PDF merge form submitted');
+                
+                if (files.length === 0) {
+                    alert('Please select at least one PDF file');
+                    return;
+                }
+
+                console.log('Starting PDF merge for files:', files.map(f => f.name));
+
+                const formData = new FormData();
+                files.forEach(file => formData.append('files', file));
+                formData.append('ai_analysis', aiAnalysis);
+
+                try {
+                    console.log('Sending request to:', `${apiBase}/api/pdf/merge`);
+                    const response = await fetch(`${apiBase}/api/pdf/merge`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    
+                    console.log('Response status:', response.status);
+                    
+                    if (!response.ok) {
+                        throw new Error(`HTTP error! status: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    console.log('PDF merge result:', result);
+                    
+                    if (result.job_id) {
+                        console.log('Starting polling for job:', result.job_id);
+                        startPolling(result.job_id, 'pdf_merge');
+                    } else {
+                        alert('Failed to start PDF merge: ' + (result.message || 'Unknown error'));
+                    }
+                } catch (error) {
+                    console.error('Error starting PDF merge:', error);
+                    alert('Error starting PDF merge: ' + error.message);
+                }
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                        <i className="fas fa-file-pdf text-red-300 mr-3"></i>
+                        AI-Enhanced PDF Tools
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">PDF Files to Merge</label>
+                            <input
+                                type="file"
+                                accept=".pdf"
+                                multiple
+                                onChange={handleFileChange}
+                                className="w-full p-4 rounded-lg glass-button text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white/20 file:text-white"
+                            />
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                id="pdfAiAnalysis"
+                                checked={aiAnalysis}
+                                onChange={(e) => setAiAnalysis(e.target.checked)}
+                                className="w-5 h-5 text-cyan-300 rounded"
+                            />
+                            <label htmlFor="pdfAiAnalysis" className="text-white/90">
+                                <i className="fas fa-brain text-cyan-300 mr-2"></i>
+                                Enable AI Content Analysis
+                            </label>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={files.length === 0}
+                            className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i className="fas fa-file-merge mr-2"></i>
+                            Merge PDFs with AI Analysis
+                        </button>
+                    </form>
+
+                    <JobStatusDisplay jobs={jobs} jobType="pdf_merge" apiBase={apiBase} />
+                </div>
+            );
+        };
+
+        // Image Enhancement Tab
+        const ImageTab = ({ jobs, startPolling, apiBase }) => {
+            const [file, setFile] = useState(null);
+            const [scaleFactor, setScaleFactor] = useState(2.0);
+            const [aiEnhance, setAiEnhance] = useState(false);
+            const [enhancementPrompt, setEnhancementPrompt] = useState('');
+
+            const handleFileChange = (e) => {
+                setFile(e.target.files[0]);
+            };
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!file) return;
+
+                const formData = new FormData();
+                formData.append('file', file);
+                formData.append('scale_factor', scaleFactor);
+                formData.append('ai_enhance', aiEnhance);
+                formData.append('enhancement_prompt', enhancementPrompt);
+
+                try {
+                    const response = await fetch(`${apiBase}/api/image/enhance`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.job_id) {
+                        startPolling(result.job_id, 'image_enhance');
+                    }
+                } catch (error) {
+                    console.error('Error starting image enhancement:', error);
+                }
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                        <i className="fas fa-image text-green-300 mr-3"></i>
+                        AI-Powered Image Enhancement
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">Image File</label>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleFileChange}
+                                className="w-full p-4 rounded-lg glass-button text-white file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-white/20 file:text-white"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">Scale Factor: {scaleFactor}x</label>
+                            <input
+                                type="range"
+                                min="1"
+                                max="4"
+                                step="0.5"
+                                value={scaleFactor}
+                                onChange={(e) => setScaleFactor(parseFloat(e.target.value))}
+                                className="w-full h-2 bg-white/20 rounded-lg appearance-none cursor-pointer"
+                            />
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                id="aiEnhance"
+                                checked={aiEnhance}
+                                onChange={(e) => setAiEnhance(e.target.checked)}
+                                className="w-5 h-5 text-cyan-300 rounded"
+                            />
+                            <label htmlFor="aiEnhance" className="text-white/90">
+                                <i className="fas fa-brain text-cyan-300 mr-2"></i>
+                                Enable AI Enhancement
+                            </label>
+                        </div>
+
+                        {aiEnhance && (
+                            <div>
+                                <label className="block text-white/90 mb-2 font-medium">Enhancement Prompt (Optional)</label>
+                                <input
+                                    type="text"
+                                    value={enhancementPrompt}
+                                    onChange={(e) => setEnhancementPrompt(e.target.value)}
+                                    placeholder="e.g., professional photo, cinematic lighting, high detail..."
+                                    className="w-full p-4 rounded-lg glass-button text-white placeholder-white/50"
+                                />
+                            </div>
+                        )}
+
+                        <button
+                            type="submit"
+                            disabled={!file}
+                            className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i className="fas fa-magic mr-2"></i>
+                            Enhance Image with AI
+                        </button>
+                    </form>
+
+                    <JobStatusDisplay jobs={jobs} jobType="image_enhance" apiBase={apiBase} />
+                </div>
+            );
+        };
+
+        // Video Generation Tab
+        const VideoTab = ({ jobs, startPolling, apiBase }) => {
+            const [prompt, setPrompt] = useState('');
+            const [duration, setDuration] = useState(5);
+            const [width, setWidth] = useState(512);
+            const [height, setHeight] = useState(512);
+            const [aiEnhancePrompt, setAiEnhancePrompt] = useState(false);
+            const [videoFormat, setVideoFormat] = useState('mp4');
+            const [quality, setQuality] = useState('1080p');
+
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!prompt) return;
+
+            const formData = new FormData();
+            formData.append('prompt', prompt);
+            formData.append('duration', duration);
+            formData.append('width', width);
+            formData.append('height', height);
+            formData.append('ai_enhance_prompt', aiEnhancePrompt);
+            formData.append('video_format', videoFormat);
+            formData.append('quality', quality);
+
+                try {
+                    const response = await fetch(`${apiBase}/api/video/generate`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    
+                    if (result.job_id) {
+                        startPolling(result.job_id, 'video_generation');
+                    }
+                } catch (error) {
+                    console.error('Error starting video generation:', error);
+                }
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                        <i className="fas fa-video text-purple-300 mr-3"></i>
+                        AI Video Generator
+                    </h2>
+                    
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">Video Prompt</label>
+                            <textarea
+                                value={prompt}
+                                onChange={(e) => setPrompt(e.target.value)}
+                                placeholder="Describe the video you want to generate..."
+                                rows="3"
+                                className="w-full p-4 rounded-lg glass-button text-white placeholder-white/50"
+                            />
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className="block text-white/90 mb-2 font-medium">Duration (seconds)</label>
+                                <input
+                                    type="number"
+                                    min="1"
+                                    max="30"
+                                    value={duration}
+                                    onChange={(e) => setDuration(parseInt(e.target.value))}
+                                    className="w-full p-3 rounded-lg glass-button text-white"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-white/90 mb-2 font-medium">Resolution</label>
+                                <select
+                                    value={`${width}x${height}`}
+                                    onChange={(e) => {
+                                        const [w, h] = e.target.value.split('x').map(Number);
+                                        setWidth(w);
+                                        setHeight(h);
+                                    }}
+                                    className="w-full p-3 rounded-lg glass-button text-white bg-white/20"
+                                >
+                                    <option value="512x512">512x512</option>
+                                    <option value="720x480">720x480</option>
+                                    <option value="1280x720">1280x720</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div className="flex items-center space-x-3">
+                            <input
+                                type="checkbox"
+                                id="aiEnhancePrompt"
+                                checked={aiEnhancePrompt}
+                                onChange={(e) => setAiEnhancePrompt(e.target.checked)}
+                                className="w-5 h-5 text-cyan-300 rounded"
+                            />
+                            <label htmlFor="aiEnhancePrompt" className="text-white/90">
+                                <i className="fas fa-brain text-cyan-300 mr-2"></i>
+                                Enhance prompt with AI
+                            </label>
+                        </div>
+
+                        {/* Format Selection */}
+                        <div className="mt-6">
+                            <label className="block text-white/90 text-sm font-medium mb-3">
+                                <i className="fas fa-cog mr-2"></i>
+                                Output Format & Quality
+                            </label>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-white/80 text-xs mb-2">Video Format</label>
+                                    <select
+                                        value={videoFormat}
+                                        onChange={(e) => setVideoFormat(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                                    >
+                                        <option value="mp4">MP4 (H.264)</option>
+                                        <option value="mov">MOV (Apple)</option>
+                                        <option value="mkv">MKV (Matroska)</option>
+                                        <option value="avi">AVI (Legacy)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label className="block text-white/80 text-xs mb-2">Quality</label>
+                                    <select
+                                        value={quality}
+                                        onChange={(e) => setQuality(e.target.value)}
+                                        className="w-full px-4 py-3 rounded-lg bg-white/10 border border-white/20 text-white placeholder-white/50 focus:outline-none focus:ring-2 focus:ring-cyan-400 focus:border-transparent"
+                                    >
+                                        <option value="4k">4K Ultra HD (3840x2160)</option>
+                                        <option value="1080p">Full HD (1920x1080)</option>
+                                        <option value="720p">HD (1280x720)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={!prompt}
+                            className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <i className="fas fa-play mr-2"></i>
+                            Generate AI Video
+                        </button>
+                    </form>
+
+                    <JobStatusDisplay jobs={jobs} jobType="video_generation" apiBase={apiBase} />
+                </div>
+            );
+        };
+
+        // AI Analysis Tab
+        const AiAnalysisTab = ({ apiBase }) => {
+            const [content, setContent] = useState('');
+            const [analysisType, setAnalysisType] = useState('general');
+            const [aiModel, setAiModel] = useState('auto'); // auto, openai, google
+            const [analysis, setAnalysis] = useState(null);
+            const [loading, setLoading] = useState(false);
+            
+            // Prompt optimization states
+            const [promptToOptimize, setPromptToOptimize] = useState('');
+            const [optimizationPurpose, setOptimizationPurpose] = useState('general');
+            const [optimizationAiModel, setOptimizationAiModel] = useState('auto');
+            const [optimizedPrompt, setOptimizedPrompt] = useState(null);
+            const [promptLoading, setPromptLoading] = useState(false);
+
+            const handleAnalyze = async (e) => {
+                e.preventDefault();
+                if (!content) return;
+
+                setLoading(true);
+                const formData = new FormData();
+                formData.append('content', content);
+                formData.append('analysis_type', analysisType);
+                formData.append('ai_model', aiModel);
+
+                try {
+                    const response = await fetch(`${apiBase}/api/ai/analyze`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    setAnalysis(result);
+                } catch (error) {
+                    console.error('Error analyzing content:', error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const handleOptimizePrompt = async (e) => {
+                e.preventDefault();
+                if (!promptToOptimize) return;
+
+                setPromptLoading(true);
+                const formData = new FormData();
+                formData.append('prompt', promptToOptimize);
+                formData.append('purpose', optimizationPurpose);
+                formData.append('ai_model', optimizationAiModel);
+
+                try {
+                    const response = await fetch(`${apiBase}/api/ai/prompt`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                    const result = await response.json();
+                    setOptimizedPrompt(result);
+                } catch (error) {
+                    console.error('Prompt optimization error:', error);
+                    setOptimizedPrompt({ error: error.message });
+                } finally {
+                    setPromptLoading(false);
+                }
+            };
+
+            return (
+                <div>
+                    <h2 className="text-2xl font-bold text-white mb-6">
+                        <i className="fas fa-brain text-cyan-300 mr-3"></i>
+                        AI Content Analysis
+                    </h2>
+                    
+                    <form onSubmit={handleAnalyze} className="space-y-6">
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">Content to Analyze</label>
+                            <textarea
+                                value={content}
+                                onChange={(e) => setContent(e.target.value)}
+                                placeholder="Enter text content for AI analysis..."
+                                rows="6"
+                                className="w-full p-4 rounded-lg glass-button text-white placeholder-white/50"
+                            />
+                        </div>
+
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">Analysis Type</label>
+                            <select
+                                value={analysisType}
+                                onChange={(e) => setAnalysisType(e.target.value)}
+                                className="w-full p-3 rounded-lg glass-button text-white bg-white/20"
+                            >
+                                <option value="general">General Analysis</option>
+                                <option value="technical">Technical Analysis</option>
+                                <option value="creative">Creative Analysis</option>
+                                <option value="business">Business Analysis</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label className="block text-white/90 mb-2 font-medium">AI Model</label>
+                            <select
+                                value={aiModel}
+                                onChange={(e) => setAiModel(e.target.value)}
+                                className="w-full p-3 rounded-lg glass-button text-white bg-white/20"
+                            >
+                                <option value="auto">Auto (Best Available)</option>
+                                <option value="openai">OpenAI GPT-3.5 Turbo</option>
+                                <option value="google">Google AI Gemini</option>
+                            </select>
+                            <p className="text-white/70 text-sm mt-1">
+                                {aiModel === 'auto' && 'Will automatically choose the best available AI model'}
+                                {aiModel === 'openai' && 'Uses OpenAI GPT-3.5 Turbo for analysis'}
+                                {aiModel === 'google' && 'Uses Google AI Gemini for analysis'}
+                            </p>
+                        </div>
+
+                        <button
+                            type="submit"
+                            disabled={!content || loading}
+                            className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {loading ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin mr-2"></i>
+                                    Analyzing...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-search mr-2"></i>
+                                    Analyze with AI
+                                </>
+                            )}
+                        </button>
+                    </form>
+
+                    {/* Prompt Optimization Section */}
+                    <div className="mt-8 p-6 rounded-lg glass-card border border-white/20">
+                        <h3 className="text-white font-bold text-lg mb-4 flex items-center">
+                            <i className="fas fa-magic mr-2"></i>
+                            AI Prompt Optimizer
+                        </h3>
+                        <form onSubmit={handleOptimizePrompt} className="space-y-4">
+                            <div>
+                                <label className="block text-white/90 mb-2 font-medium">Your Prompt</label>
+                                <textarea
+                                    value={promptToOptimize}
+                                    onChange={(e) => setPromptToOptimize(e.target.value)}
+                                    placeholder="Enter a prompt you'd like to optimize..."
+                                    rows="3"
+                                    className="w-full p-4 rounded-lg glass-button text-white placeholder-white/50"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-white/90 mb-2 font-medium">Optimization Purpose</label>
+                                <select
+                                    value={optimizationPurpose}
+                                    onChange={(e) => setOptimizationPurpose(e.target.value)}
+                                    className="w-full p-3 rounded-lg glass-button text-white bg-white/20"
+                                >
+                                    <option value="general">General Use</option>
+                                    <option value="creative">Creative Writing</option>
+                                    <option value="technical">Technical Documentation</option>
+                                    <option value="business">Business Analysis</option>
+                                    <option value="video">Video Generation</option>
+                                    <option value="image">Image Generation</option>
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-white/90 mb-2 font-medium">AI Model</label>
+                                <select
+                                    value={optimizationAiModel}
+                                    onChange={(e) => setOptimizationAiModel(e.target.value)}
+                                    className="w-full p-3 rounded-lg glass-button text-white bg-white/20"
+                                >
+                                    <option value="auto">Auto (Best Available)</option>
+                                    <option value="openai">OpenAI GPT-3.5 Turbo</option>
+                                    <option value="google">Google AI Gemini</option>
+                                </select>
+                            </div>
+
+                            <button
+                                type="submit"
+                                disabled={!promptToOptimize || promptLoading}
+                                className="w-full py-4 px-6 rounded-lg glass-button text-white font-medium text-lg disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {promptLoading ? (
+                                    <>
+                                        <i className="fas fa-spinner fa-spin mr-2"></i>
+                                        Optimizing...
+                                    </>
+                                ) : (
+                                    <>
+                                        <i className="fas fa-magic mr-2"></i>
+                                        Optimize Prompt
+                                    </>
+                                )}
+                            </button>
+                        </form>
+
+                        {optimizedPrompt && (
+                            <div className="mt-4 p-4 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                                <h4 className="text-cyan-300 font-medium mb-2">Optimized Prompt</h4>
+                                {optimizedPrompt.model_used && (
+                                    <p className="text-cyan-200 text-xs mb-2">
+                                        <i className="fas fa-robot mr-1"></i>
+                                        Optimized by: {optimizedPrompt.model_used}
+                                    </p>
+                                )}
+                                <p className="text-white/90 text-sm">{optimizedPrompt.optimized_prompt}</p>
+                            </div>
+                        )}
+                    </div>
+
+                    {analysis && (
+                        <div className="mt-8 p-6 rounded-lg glass-card">
+                            <h3 className="text-xl font-bold text-white mb-4">
+                                <i className="fas fa-lightbulb text-yellow-300 mr-2"></i>
+                                AI Analysis Results
+                            </h3>
+                            {analysis.model_used && (
+                                <div className="mb-3 p-2 rounded-lg bg-blue-500/10 border border-blue-500/20">
+                                    <p className="text-blue-300 text-sm">
+                                        <i className="fas fa-robot mr-2"></i>
+                                        Powered by: {analysis.model_used}
+                                    </p>
+                                </div>
+                            )}
+                            <div className="text-white/90 whitespace-pre-wrap">
+                                {analysis.analysis}
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        // Progress Bar Component
+        const ProgressBar = ({ progress, status, showPercentage = true, animated = true, toolType = null, stage = null }) => {
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'processing': return 'from-blue-500 to-cyan-500';
+                    case 'completed': return 'from-green-500 to-emerald-500';
+                    case 'failed': return 'from-red-500 to-pink-500';
+                    case 'pending': return 'from-yellow-500 to-orange-500';
+                    default: return 'from-gray-500 to-gray-600';
+                }
+            };
+
+            const getStatusIcon = (status) => {
+                switch (status) {
+                    case 'processing': return 'fa-spinner fa-spin';
+                    case 'completed': return 'fa-check-circle';
+                    case 'failed': return 'fa-times-circle';
+                    case 'pending': return 'fa-clock';
+                    default: return 'fa-circle';
+                }
+            };
+
+            const getToolIcon = (toolType) => {
+                switch (toolType) {
+                    case 'audio': return 'fa-music';
+                    case 'youtube': return 'fa-youtube';
+                    case 'pdf': return 'fa-file-pdf';
+                    case 'image': return 'fa-image';
+                    case 'video': return 'fa-video';
+                    case 'ai': return 'fa-brain';
+                    default: return 'fa-cog';
+                }
+            };
+
+            const getStageText = (stage, toolType) => {
+                if (!stage) return '';
+                
+                const stages = {
+                    audio: {
+                        'uploading': 'Uploading audio file...',
+                        'analyzing': 'Analyzing audio structure...',
+                        'separating': 'Separating audio stems...',
+                        'converting': 'Converting to selected format...',
+                        'finalizing': 'Finalizing output...'
+                    },
+                    youtube: {
+                        'extracting': 'Extracting video metadata...',
+                        'downloading': 'Downloading audio stream...',
+                        'converting': 'Converting to WAV format...',
+                        'processing': 'Processing audio...',
+                        'finalizing': 'Finalizing output...'
+                    },
+                    pdf: {
+                        'uploading': 'Uploading PDF file...',
+                        'analyzing': 'Analyzing document structure...',
+                        'processing': 'Processing PDF...',
+                        'merging': 'Merging documents...',
+                        'finalizing': 'Finalizing output...'
+                    },
+                    image: {
+                        'uploading': 'Uploading image...',
+                        'analyzing': 'Analyzing image quality...',
+                        'enhancing': 'Enhancing image...',
+                        'upscaling': 'Upscaling resolution...',
+                        'finalizing': 'Finalizing output...'
+                    },
+                    video: {
+                        'generating': 'Generating video frames...',
+                        'rendering': 'Rendering video...',
+                        'encoding': 'Encoding video...',
+                        'processing': 'Processing effects...',
+                        'finalizing': 'Finalizing output...'
+                    },
+                    ai: {
+                        'analyzing': 'Analyzing content...',
+                        'processing': 'Processing with AI...',
+                        'optimizing': 'Optimizing results...',
+                        'finalizing': 'Finalizing analysis...'
+                    }
+                };
+
+                return stages[toolType]?.[stage] || `${stage}...`;
+            };
+
+            return (
+                <div className="w-full">
+                    <div className="flex items-center justify-between mb-2">
+                        <div className="flex items-center space-x-2">
+                            {toolType && (
+                                <i className={`fas ${getToolIcon(toolType)} text-sm text-purple-400`}></i>
+                            )}
+                            <i className={`fas ${getStatusIcon(status)} text-sm ${
+                                status === 'processing' ? 'text-cyan-400' :
+                                status === 'completed' ? 'text-green-400' :
+                                status === 'failed' ? 'text-red-400' :
+                                'text-yellow-400'
+                            }`}></i>
+                            <span className="text-white/90 text-sm font-medium capitalize">
+                                {stage ? getStageText(stage, toolType) : status}
+                            </span>
+                        </div>
+                        {showPercentage && (
+                            <span className="text-white/70 text-sm font-mono">
+                                {progress}%
+                            </span>
+                        )}
+                    </div>
+                    <div className="w-full bg-gray-700/50 rounded-full h-2 overflow-hidden relative">
+                        <div 
+                            className={`h-full bg-gradient-to-r ${getStatusColor(status)} transition-all duration-500 ease-out ${
+                                animated && status === 'processing' ? 'animate-pulse' : ''
+                            }`}
+                            style={{ width: `${progress}%` }}
+                        ></div>
+                        {status === 'processing' && (
+                            <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent animate-pulse"></div>
+                        )}
+                    </div>
+                </div>
+            );
+        };
+
+        // Smart Visual Processing Indicator Component
+        const ProcessingIndicator = ({ toolType, status, progress, stage, message }) => {
+            const getToolSpecificIndicator = () => {
+                switch (toolType) {
+                    case 'audio':
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-cyan-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-music text-cyan-400"></i>
+                                        <span className="text-white font-medium">Audio Processing</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Separating audio stems...'}</div>
+                                </div>
+                                <div className="text-cyan-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                    case 'youtube':
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-red-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-red-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-red-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-red-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-youtube text-red-400"></i>
+                                        <span className="text-white font-medium">YouTube Conversion</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Converting video to audio...'}</div>
+                                </div>
+                                <div className="text-red-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                    case 'pdf':
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-orange-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-orange-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-file-pdf text-orange-400"></i>
+                                        <span className="text-white font-medium">PDF Processing</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Processing PDF documents...'}</div>
+                                </div>
+                                <div className="text-orange-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                    case 'image':
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-green-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-green-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-image text-green-400"></i>
+                                        <span className="text-white font-medium">Image Enhancement</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Enhancing image quality...'}</div>
+                                </div>
+                                <div className="text-green-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                    case 'video':
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-purple-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-purple-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-video text-purple-400"></i>
+                                        <span className="text-white font-medium">Video Generation</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Generating video content...'}</div>
+                                </div>
+                                <div className="text-purple-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                    case 'ai':
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-cyan-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-cyan-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-brain text-cyan-400"></i>
+                                        <span className="text-white font-medium">AI Analysis</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Processing with AI...'}</div>
+                                </div>
+                                <div className="text-cyan-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                    default:
+                        return (
+                            <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-gray-400/30">
+                                <div className="flex space-x-1">
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                    <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
+                                </div>
+                                <div className="flex-1">
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-cog text-gray-400"></i>
+                                        <span className="text-white font-medium">Processing</span>
+                                    </div>
+                                    <div className="text-white/70 text-sm mt-1">{message || 'Processing request...'}</div>
+                                </div>
+                                <div className="text-gray-400 font-mono text-sm">{progress}%</div>
+                            </div>
+                        );
+                }
+            };
+
+            if (status === 'completed') {
+                return (
+                    <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-green-400/30 bg-green-500/10">
+                        <i className="fas fa-check-circle text-green-400 text-xl"></i>
+                        <div className="flex-1">
+                            <div className="text-white font-medium">Processing Complete!</div>
+                            <div className="text-white/70 text-sm">Your file is ready for download</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            if (status === 'failed') {
+                return (
+                    <div className="flex items-center space-x-3 p-4 glass-card rounded-lg border border-red-400/30 bg-red-500/10">
+                        <i className="fas fa-times-circle text-red-400 text-xl"></i>
+                        <div className="flex-1">
+                            <div className="text-white font-medium">Processing Failed</div>
+                            <div className="text-white/70 text-sm">Please try again or check your input</div>
+                        </div>
+                    </div>
+                );
+            }
+
+            return getToolSpecificIndicator();
+        };
+
+        // Job Status Display Component
+        const JobStatusDisplay = ({ jobs, jobType, apiBase }) => {
+            const relevantJobs = Object.values(jobs).filter(job => 
+                (jobType === 'separation' && !job.type) ||
+                (jobType === 'youtube_conversion' && job.type === 'youtube_conversion') ||
+                (jobType === 'pdf_merge' && job.type === 'pdf_merge') ||
+                (jobType === 'image_enhance' && job.type === 'image_enhance') ||
+                (jobType === 'video_generation' && job.type === 'video_generation')
+            );
+
+            if (relevantJobs.length === 0) return null;
+
+            return (
+                <div className="mt-8">
+                    <h3 className="text-xl font-bold text-white mb-4">
+                        <i className="fas fa-tasks mr-2"></i>
+                        Processing Status
+                    </h3>
+                    <div className="space-y-4">
+                        {relevantJobs.map(job => (
+                            <JobCard key={job.job_id} job={job} jobType={jobType} apiBase={apiBase} />
+                        ))}
+                    </div>
+                </div>
+            );
+        };
+
+        // Job Card Component
+        const JobCard = ({ job, jobType, apiBase }) => {
+            const getStatusColor = (status) => {
+                switch (status) {
+                    case 'processing': return 'border-cyan-400 bg-cyan-500/10';
+                    case 'completed': return 'border-green-400 bg-green-500/10';
+                    case 'failed': return 'border-red-400 bg-red-500/10';
+                    default: return 'border-yellow-400 bg-yellow-500/10';
+                }
+            };
+
+            // Calculate progress based on job type and status
+            const getJobProgress = (job) => {
+                // Use progress from API if available, otherwise calculate locally
+                if (job.progress !== undefined) return job.progress;
+                
+                if (job.status === 'completed') return 100;
+                if (job.status === 'failed') return 100;
+                if (job.status === 'processing') {
+                    // For YouTube conversion, show progress based on metadata availability
+                    if (jobType === 'youtube_conversion' && job.title) return 75;
+                    // For other jobs, show processing progress
+                    return 50;
+                }
+                return 0;
+            };
+
+            // Get processing stage based on job type and progress
+            const getProcessingStage = (job, jobType, progress) => {
+                if (job.status !== 'processing') return null;
+                
+                const stages = {
+                    'separation': ['uploading', 'analyzing', 'separating', 'converting', 'finalizing'],
+                    'youtube_conversion': ['extracting', 'downloading', 'converting', 'processing', 'finalizing'],
+                    'pdf_merge': ['uploading', 'analyzing', 'processing', 'merging', 'finalizing'],
+                    'image_enhance': ['uploading', 'analyzing', 'enhancing', 'upscaling', 'finalizing'],
+                    'video_generation': ['generating', 'rendering', 'encoding', 'processing', 'finalizing'],
+                    'ai_analysis': ['analyzing', 'processing', 'optimizing', 'finalizing']
+                };
+                
+                const jobStages = stages[jobType] || stages['separation'];
+                const stageIndex = Math.floor((progress / 100) * jobStages.length);
+                return jobStages[Math.min(stageIndex, jobStages.length - 1)];
+            };
+
+            // Get tool type for processing indicator
+            const getToolType = (jobType) => {
+                switch (jobType) {
+                    case 'separation': return 'audio';
+                    case 'youtube_conversion': return 'youtube';
+                    case 'pdf_merge': return 'pdf';
+                    case 'image_enhance': return 'image';
+                    case 'video_generation': return 'video';
+                    case 'ai_analysis': return 'ai';
+                    default: return 'audio';
+                }
+            };
+
+            const progress = getJobProgress(job);
+            const stage = getProcessingStage(job, jobType, progress);
+            const toolType = getToolType(jobType);
+
+            return (
+                <div className={`glass-card rounded-lg p-4 border-l-4 ${getStatusColor(job.status)}`}>
+                    <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                            <span className="text-white font-medium">{job.filename || job.prompt || 'Processing...'}</span>
+                        </div>
+                    </div>
+
+                    {/* Smart Visual Processing Indicator */}
+                    <div className="mb-4">
+                        <ProcessingIndicator 
+                            toolType={toolType}
+                            status={job.status}
+                            progress={progress}
+                            stage={stage}
+                            message={job.message}
+                        />
+                    </div>
+
+                    {/* YouTube Metadata Display */}
+                    {jobType === 'youtube_conversion' && (job.title || job.url) && (
+                        <div className="mb-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <h4 className="text-red-300 font-medium mb-2 flex items-center">
+                                <i className="fas fa-youtube mr-2"></i>
+                                Video Information
+                            </h4>
+                            <div className="space-y-2">
+                                {job.title && (
+                                    <div className="flex items-start space-x-2">
+                                        <i className="fas fa-video text-red-300 mt-0.5 text-sm"></i>
+                                        <div className="flex-1">
+                                            <p className="text-white/90 text-sm font-medium">Title:</p>
+                                            <p className="text-white text-sm leading-relaxed">{job.title}</p>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.uploader && (
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-user text-blue-300 text-sm"></i>
+                                        <div>
+                                            <span className="text-white/90 text-sm font-medium">Channel: </span>
+                                            <span className="text-white text-sm">{job.uploader}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.duration && (
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-clock text-green-300 text-sm"></i>
+                                        <div>
+                                            <span className="text-white/90 text-sm font-medium">Duration: </span>
+                                            <span className="text-white text-sm">
+                                                {Math.floor(job.duration / 60)}:{(job.duration % 60).toString().padStart(2, '0')}
+                                            </span>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.view_count && (
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-eye text-purple-300 text-sm"></i>
+                                        <div>
+                                            <span className="text-white/90 text-sm font-medium">Views: </span>
+                                            <span className="text-white text-sm">{job.view_count.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.like_count && (
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-thumbs-up text-green-300 text-sm"></i>
+                                        <div>
+                                            <span className="text-white/90 text-sm font-medium">Likes: </span>
+                                            <span className="text-white text-sm">{job.like_count.toLocaleString()}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.upload_date && (
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-calendar text-orange-300 text-sm"></i>
+                                        <div>
+                                            <span className="text-white/90 text-sm font-medium">Uploaded: </span>
+                                            <span className="text-white text-sm">{job.upload_date}</span>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.url && (
+                                    <div className="flex items-center space-x-2">
+                                        <i className="fas fa-link text-purple-300 text-sm"></i>
+                                        <div className="flex-1">
+                                            <span className="text-white/90 text-sm font-medium">URL: </span>
+                                            <a 
+                                                href={job.url} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-blue-300 text-sm hover:text-blue-200 underline truncate block"
+                                            >
+                                                {job.url}
+                                            </a>
+                                        </div>
+                                    </div>
+                                )}
+                                {job.status === 'processing' && (
+                                    <div className="mt-3 p-2 rounded-lg bg-yellow-500/10 border border-yellow-500/20">
+                                        <p className="text-yellow-300 text-sm flex items-center">
+                                            <i className="fas fa-spinner fa-spin mr-2"></i>
+                                            Converting to WAV format...
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
+
+                    {job.ai_analysis && (
+                        <div className="mb-3 p-3 rounded-lg bg-cyan-500/10 border border-cyan-500/20">
+                            <h4 className="text-cyan-300 font-medium mb-2">
+                                <i className="fas fa-brain mr-2"></i>
+                                AI Analysis
+                            </h4>
+                            <p className="text-white/90 text-sm">{job.ai_analysis.analysis}</p>
+                        </div>
+                    )}
+
+                    {job.status === 'completed' && (
+                        <div className="space-y-3">
+                            {/* Audio Stems Download */}
+                            {job.stems && Object.keys(job.stems).length > 0 && (
+                                <div>
+                                    <div className="flex items-center justify-between mb-2">
+                                        <h5 className="text-white/90 text-sm font-medium">
+                                            <i className="fas fa-music mr-2"></i>
+                                            Audio Stems
+                                        </h5>
+                                        <button
+                                            onClick={() => {
+                                                // Download all stems as a ZIP-like experience
+                                                Object.keys(job.stems).forEach((stem, index) => {
+                                                    setTimeout(() => {
+                                                        const link = document.createElement('a');
+                                                        link.href = `${apiBase}/api/download/${job.job_id}/${stem}`;
+                                                        link.download = `${job.filename || 'audio'}_${stem}.wav`;
+                                                        link.click();
+                                                    }, index * 100); // Stagger downloads
+                                                });
+                                            }}
+                                            className="text-cyan-300 hover:text-cyan-200 text-xs underline"
+                                        >
+                                            <i className="fas fa-download mr-1"></i>
+                                            Download All
+                                        </button>
+                                    </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {Object.keys(job.stems).map(stem => (
+                                            <a
+                                                key={stem}
+                                                href={`${apiBase}/api/download/${job.job_id}/${stem}`}
+                                                download={`${job.filename || 'audio'}_${stem}.wav`}
+                                                className="glass-button px-4 py-2 rounded-lg text-white text-sm hover:bg-white/30 transition-all flex items-center"
+                                            >
+                                                <i className="fas fa-download mr-2"></i>
+                                                {stem.charAt(0).toUpperCase() + stem.slice(1)}
+                                            </a>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Main File Download */}
+                            {job.file_path && (
+                                <div>
+                                    <h5 className="text-white/90 text-sm font-medium mb-2">
+                                        <i className={`fas ${
+                                            jobType === 'youtube_conversion' ? 'fa-youtube' :
+                                            jobType === 'pdf_merge' ? 'fa-file-pdf' :
+                                            jobType === 'image_enhance' ? 'fa-image' :
+                                            jobType === 'video_generation' ? 'fa-video' :
+                                            'fa-file'
+                                        } mr-2`}></i>
+                                        {jobType === 'youtube_conversion' ? 'WAV File' :
+                                         jobType === 'pdf_merge' ? 'PDF File' :
+                                         jobType === 'image_enhance' ? 'Enhanced Image' :
+                                         jobType === 'video_generation' ? 'Generated Video' :
+                                         'Output File'}
+                                    </h5>
+                                    <div className="flex flex-wrap gap-2">
+                                        <a
+                                            href={`${apiBase}/api/${jobType === 'youtube_conversion' ? 'youtube' : jobType === 'pdf_merge' ? 'pdf' : jobType === 'image_enhance' ? 'image' : jobType === 'video_generation' ? 'video' : 'download'}/download/${job.job_id}`}
+                                            download={job.filename || 'output'}
+                                            className="glass-button px-4 py-2 rounded-lg text-white text-sm hover:bg-white/30 transition-all flex items-center"
+                                        >
+                                            <i className="fas fa-download mr-2"></i>
+                                            Download {jobType === 'youtube_conversion' ? 'WAV' :
+                                                    jobType === 'pdf_merge' ? 'PDF' :
+                                                    jobType === 'image_enhance' ? 'Image' :
+                                                    jobType === 'video_generation' ? 'Video' :
+                                                    'File'}
+                                        </a>
+                                        
+                                        {/* Additional download options for specific file types */}
+                                        {jobType === 'youtube_conversion' && job.filename && (
+                                            <button
+                                                onClick={() => {
+                                                    const link = document.createElement('a');
+                                                    link.href = `${apiBase}/api/youtube/download/${job.job_id}`;
+                                                    link.download = job.filename;
+                                                    link.click();
+                                                }}
+                                                className="glass-button px-4 py-2 rounded-lg text-white text-sm hover:bg-white/30 transition-all flex items-center"
+                                            >
+                                                <i className="fas fa-save mr-2"></i>
+                                                Save to Downloads
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {job.error && (
+                        <div className="mt-3 p-3 rounded-lg bg-red-500/10 border border-red-500/20">
+                            <p className="text-red-300 text-sm">
+                                <i className="fas fa-exclamation-triangle mr-2"></i>
+                                {job.error}
+                            </p>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

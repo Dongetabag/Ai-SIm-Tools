@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AISim Tools - Professional</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        }
+        
+        .sunset-gradient {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 25%, #ff6b6b 50%, #ffa726 75%, #ff7043 100%);
+            min-height: 100vh;
+        }
+        
+        .liquid-glass {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .liquid-glass-card {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .liquid-button {
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        
+        .liquid-button:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-2px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+        }
+        
+        .liquid-button:active {
+            transform: translateY(0);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-input {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .glass-input:focus {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: inset 0 2px 10px rgba(0, 0, 0, 0.1), 0 0 0 3px rgba(255, 255, 255, 0.1);
+        }
+        
+        .tab-button {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .tab-button.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.4);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .pulse-glow {
+            animation: pulse-glow 2s ease-in-out infinite;
+        }
+        
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 20px rgba(255, 255, 255, 0.3); }
+            50% { box-shadow: 0 0 40px rgba(255, 255, 255, 0.6); }
+        }
+        
+        .instrument-icon {
+            width: 24px;
+            height: 24px;
+            opacity: 0.8;
+        }
+        
+        .stem-icon {
+            width: 20px;
+            height: 20px;
+            opacity: 0.9;
+        }
+    </style>
+</head>
+<body class="sunset-gradient">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useRef } = React;
+
+        function ProfessionalMusicStudio() {
+            const [activeTab, setActiveTab] = useState('stem-separator');
+            
+            return (
+                <div className="min-h-screen p-6">
+                    <div className="max-w-6xl mx-auto">
+                        {/* Header */}
+                        <div className="text-center mb-12">
+                            <div className="liquid-glass-card rounded-3xl p-8 mb-6">
+                                <i className="fas fa-music text-6xl text-white floating pulse-glow mb-6"></i>
+                                <h1 className="text-4xl font-semibold text-white mb-2">
+                                    AISim Tools
+                                </h1>
+                                <p className="text-white/80 text-lg">
+                                    Professional audio separation and YouTube conversion tools
+                                </p>
+                            </div>
+                        </div>
+
+                        {/* Tab Navigation */}
+                        <div className="liquid-glass-card rounded-3xl p-2 mb-8">
+                            <div className="flex space-x-2">
+                                <button
+                                    onClick={() => setActiveTab('stem-separator')}
+                                    className={`flex-1 tab-button p-4 rounded-2xl text-center transition-all duration-300 ${
+                                        activeTab === 'stem-separator' ? 'active' : ''
+                                    }`}
+                                >
+                                    <i className="fas fa-sliders-h text-white text-xl mb-2 block"></i>
+                                    <div className="text-white font-semibold">Stem Separator</div>
+                                    <div className="text-white/70 text-sm">Separate audio tracks</div>
+                                </button>
+                                <button
+                                    onClick={() => setActiveTab('youtube-converter')}
+                                    className={`flex-1 tab-button p-4 rounded-2xl text-center transition-all duration-300 ${
+                                        activeTab === 'youtube-converter' ? 'active' : ''
+                                    }`}
+                                >
+                                    <i className="fab fa-youtube text-white text-xl mb-2 block"></i>
+                                    <div className="text-white font-semibold">YouTube Converter</div>
+                                    <div className="text-white/70 text-sm">Convert to WAV</div>
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Tab Content */}
+                        {activeTab === 'stem-separator' && <StemSeparator />}
+                        {activeTab === 'youtube-converter' && <YouTubeConverter />}
+                    </div>
+                </div>
+            );
+        }
+
+        function StemSeparator() {
+            const [selectedFile, setSelectedFile] = useState(null);
+            const [selectedModel, setSelectedModel] = useState('htdemucs');
+            const [selectedInstruments, setSelectedInstruments] = useState(['vocals', 'drums', 'bass', 'other']);
+            const [isDragging, setIsDragging] = useState(false);
+            const [isProcessing, setIsProcessing] = useState(false);
+            const [status, setStatus] = useState(null);
+            const [downloadData, setDownloadData] = useState(null);
+            const [currentJobId, setCurrentJobId] = useState(null);
+            const fileInputRef = useRef(null);
+
+            const models = [
+                { id: 'htdemucs', name: 'High Quality', description: 'Best quality separation' },
+                { id: 'mdx_q', name: 'Fast', description: 'Quick processing' },
+                { id: 'mdx_extra', name: 'Extra', description: 'Enhanced separation' }
+            ];
+
+            const instruments = [
+                { id: 'vocals', name: 'Lead Vocals', icon: 'fas fa-microphone', description: 'Main vocals' },
+                { id: 'drums', name: 'Drums', icon: 'fas fa-drum', description: 'Percussion' },
+                { id: 'bass', name: 'Bass', icon: 'fas fa-guitar', description: 'Low frequencies' },
+                { id: 'piano', name: 'Piano', icon: 'fas fa-music', description: 'From other stem' },
+                { id: 'strings', name: 'Strings', icon: 'fas fa-violin', description: 'From other stem' },
+                { id: 'keys', name: 'Keys', icon: 'fas fa-keyboard', description: 'From other stem' },
+                { id: 'background', name: 'Background Vocals', icon: 'fas fa-users', description: 'From vocals stem' },
+                { id: 'other', name: 'Other', icon: 'fas fa-compact-disc', description: 'Everything else' }
+            ];
+
+            const handleDragOver = (e) => {
+                e.preventDefault();
+                setIsDragging(true);
+            };
+
+            const handleDragLeave = (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+            };
+
+            const handleDrop = (e) => {
+                e.preventDefault();
+                setIsDragging(false);
+                const files = e.dataTransfer.files;
+                if (files.length > 0) {
+                    setSelectedFile(files[0]);
+                }
+            };
+
+            const handleFileSelect = (e) => {
+                const files = e.target.files;
+                if (files.length > 0) {
+                    setSelectedFile(files[0]);
+                }
+            };
+
+            const toggleInstrument = (instrumentId) => {
+                setSelectedInstruments(prev => 
+                    prev.includes(instrumentId) 
+                        ? prev.filter(id => id !== instrumentId)
+                        : [...prev, instrumentId]
+                );
+            };
+
+            const processAudio = async () => {
+                if (!selectedFile || selectedInstruments.length === 0) return;
+
+                setIsProcessing(true);
+                setStatus('Uploading file...');
+                setCurrentJobId(null);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('file', selectedFile);
+                    formData.append('model', selectedModel);
+                    formData.append('instruments', selectedInstruments.join(','));
+
+                    const response = await fetch('http://localhost:8000/api/separate', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error('Upload failed');
+
+                    const data = await response.json();
+                    setCurrentJobId(data.job_id);
+                    setStatus('Processing audio... This may take a few minutes.');
+                    
+                    pollStatus(data.job_id);
+                } catch (error) {
+                    setStatus(`Upload failed: ${error.message}`);
+                    setIsProcessing(false);
+                }
+            };
+
+            const pollStatus = async (jobId) => {
+                try {
+                    const response = await fetch(`http://localhost:8000/api/status/${jobId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        setStatus('Separation completed!');
+                        setDownloadData(data.stems);
+                        setIsProcessing(false);
+                    } else if (data.status === 'failed') {
+                        setStatus(`Processing failed: ${data.error}`);
+                        setIsProcessing(false);
+                    } else if (data.status === 'processing') {
+                        setStatus('Processing audio... This may take a few minutes.');
+                        setTimeout(() => pollStatus(jobId), 2000);
+                    }
+                } catch (error) {
+                    setStatus('Failed to check status');
+                    setIsProcessing(false);
+                }
+            };
+
+            const downloadStem = async (stemName) => {
+                if (!currentJobId) return;
+                
+                try {
+                    const response = await fetch(`http://localhost:8000/api/download/${currentJobId}/${stemName}`);
+                    if (!response.ok) throw new Error('Download failed');
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${selectedFile.name.replace(/\.[^/.]+$/, '')}_${stemName}.wav`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert(`Download failed: ${error.message}`);
+                }
+            };
+
+            const resetApp = () => {
+                setSelectedFile(null);
+                setSelectedInstruments(['vocals', 'drums', 'bass', 'other']);
+                setStatus(null);
+                setDownloadData(null);
+                setCurrentJobId(null);
+                setIsProcessing(false);
+                if (fileInputRef.current) fileInputRef.current.value = '';
+            };
+
+            return (
+                <div className="liquid-glass-card rounded-3xl p-8">
+                    {/* File Upload */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-white mb-4">
+                            <i className="fas fa-cloud-upload-alt mr-3"></i>
+                            Upload Audio File
+                        </h2>
+                        <div
+                            className={`border-2 border-dashed rounded-2xl p-12 text-center transition-all duration-300 ${
+                                isDragging ? 'border-white/50 bg-white/10' : 'border-white/30'
+                            }`}
+                            onDragOver={handleDragOver}
+                            onDragLeave={handleDragLeave}
+                            onDrop={handleDrop}
+                            onClick={() => fileInputRef.current?.click()}
+                        >
+                            <input
+                                ref={fileInputRef}
+                                type="file"
+                                accept="audio/*"
+                                onChange={handleFileSelect}
+                                className="hidden"
+                            />
+                            {selectedFile ? (
+                                <div className="text-white">
+                                    <i className="fas fa-file-audio text-4xl mb-4"></i>
+                                    <p className="text-lg font-medium">{selectedFile.name}</p>
+                                    <p className="text-white/70">
+                                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                </div>
+                            ) : (
+                                <div className="text-white/70">
+                                    <i className="fas fa-cloud-upload-alt text-4xl mb-4"></i>
+                                    <p className="text-lg">Drag & drop your audio file here</p>
+                                    <p className="text-sm">or click to browse</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+
+                    {/* Model Selection */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-white mb-4">
+                            <i className="fas fa-cog mr-3"></i>
+                            Processing Model
+                        </h2>
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            {models.map((model) => (
+                                <button
+                                    key={model.id}
+                                    onClick={() => setSelectedModel(model.id)}
+                                    className={`liquid-button p-4 rounded-xl text-left transition-all duration-300 ${
+                                        selectedModel === model.id ? 'ring-2 ring-white/50' : ''
+                                    }`}
+                                >
+                                    <div className="text-white font-medium">{model.name}</div>
+                                    <div className="text-white/70 text-sm">{model.description}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Instrument Selection */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-white mb-4">
+                            <i className="fas fa-sliders-h mr-3"></i>
+                            Select Instruments to Separate
+                        </h2>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                            {instruments.map((instrument) => (
+                                <button
+                                    key={instrument.id}
+                                    onClick={() => toggleInstrument(instrument.id)}
+                                    className={`liquid-button p-4 rounded-xl text-center transition-all duration-300 ${
+                                        selectedInstruments.includes(instrument.id) 
+                                            ? 'ring-2 ring-white/50 bg-white/20' 
+                                            : ''
+                                    }`}
+                                >
+                                    <i className={`${instrument.icon} instrument-icon text-white block mx-auto mb-2`}></i>
+                                    <div className="text-white text-sm font-medium">{instrument.name}</div>
+                                    <div className="text-white/60 text-xs">{instrument.description}</div>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Process Button */}
+                    <div className="text-center mb-8">
+                        <button
+                            onClick={processAudio}
+                            disabled={!selectedFile || selectedInstruments.length === 0 || isProcessing}
+                            className="liquid-button text-white text-lg font-semibold py-4 px-12 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isProcessing ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin mr-3"></i>
+                                    Processing...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fas fa-play mr-3"></i>
+                                    Separate Audio
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Status */}
+                    {status && (
+                        <div className="mb-8">
+                            <div className="liquid-glass p-4 rounded-xl text-center">
+                                <p className="text-white font-medium">{status}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Download Area */}
+                    {downloadData && (
+                        <div className="mb-8">
+                            <h2 className="text-2xl font-semibold text-white mb-4">
+                                <i className="fas fa-download mr-3"></i>
+                                Download Separated Stems
+                            </h2>
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                {Object.entries(downloadData).map(([stemName, stemInfo]) => (
+                                    <div key={stemName} className="liquid-glass-card p-6 rounded-xl">
+                                        <div className="flex items-center justify-between mb-4">
+                                            <div className="flex items-center">
+                                                <i className={`${instruments.find(i => i.id === stemName)?.icon || 'fas fa-music'} stem-icon text-white mr-3`}></i>
+                                                <h3 className="text-white font-semibold">
+                                                    {instruments.find(i => i.id === stemName)?.name || stemName.charAt(0).toUpperCase() + stemName.slice(1)}
+                                                </h3>
+                                            </div>
+                                            <span className="text-white/70 text-sm bg-white/20 rounded-full px-3 py-1">
+                                                {(stemInfo.size / 1024 / 1024).toFixed(2)} MB
+                                            </span>
+                                        </div>
+                                        <button
+                                            onClick={() => downloadStem(stemName)}
+                                            className="w-full liquid-button text-white py-3 px-4 rounded-xl font-semibold"
+                                        >
+                                            <i className="fas fa-download mr-2"></i>
+                                            Download WAV
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Reset Button */}
+                    {(selectedFile || downloadData) && (
+                        <div className="text-center">
+                            <button
+                                onClick={resetApp}
+                                className="liquid-button text-white py-3 px-8 rounded-xl font-medium"
+                            >
+                                <i className="fas fa-redo mr-2"></i>
+                                Process New File
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        function YouTubeConverter() {
+            const [youtubeUrl, setYoutubeUrl] = useState('');
+            const [isConverting, setIsConverting] = useState(false);
+            const [conversionStatus, setConversionStatus] = useState(null);
+            const [convertedFile, setConvertedFile] = useState(null);
+            const [currentJobId, setCurrentJobId] = useState(null);
+
+            const convertYouTube = async () => {
+                if (!youtubeUrl.trim()) return;
+
+                setIsConverting(true);
+                setConversionStatus('Converting YouTube video...');
+                setCurrentJobId(null);
+
+                try {
+                    const formData = new FormData();
+                    formData.append('url', youtubeUrl);
+
+                    const response = await fetch('http://localhost:8000/api/youtube/convert', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    if (!response.ok) throw new Error('Conversion failed');
+
+                    const data = await response.json();
+                    setCurrentJobId(data.job_id);
+                    setConversionStatus('Converting to WAV... This may take a few minutes.');
+                    
+                    pollConversionStatus(data.job_id);
+                } catch (error) {
+                    setConversionStatus(`Conversion failed: ${error.message}`);
+                    setIsConverting(false);
+                }
+            };
+
+            const pollConversionStatus = async (jobId) => {
+                try {
+                    const response = await fetch(`http://localhost:8000/api/status/${jobId}`);
+                    const data = await response.json();
+                    
+                    if (data.status === 'completed') {
+                        setConversionStatus('Conversion completed!');
+                        setConvertedFile(data);
+                        setIsConverting(false);
+                    } else if (data.status === 'failed') {
+                        setConversionStatus(`Conversion failed: ${data.error}`);
+                        setIsConverting(false);
+                    } else if (data.status === 'processing') {
+                        setConversionStatus('Converting to WAV... This may take a few minutes.');
+                        setTimeout(() => pollConversionStatus(jobId), 2000);
+                    }
+                } catch (error) {
+                    setConversionStatus('Failed to check conversion status');
+                    setIsConverting(false);
+                }
+            };
+
+            const downloadConvertedFile = async () => {
+                if (!currentJobId) return;
+                
+                try {
+                    const response = await fetch(`http://localhost:8000/api/youtube/download/${currentJobId}`);
+                    if (!response.ok) throw new Error('Download failed');
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = convertedFile.filename || 'youtube_audio.wav';
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert(`Download failed: ${error.message}`);
+                }
+            };
+
+            const resetConverter = () => {
+                setYoutubeUrl('');
+                setConversionStatus(null);
+                setConvertedFile(null);
+                setCurrentJobId(null);
+                setIsConverting(false);
+            };
+
+            return (
+                <div className="liquid-glass-card rounded-3xl p-8">
+                    {/* YouTube URL Input */}
+                    <div className="mb-8">
+                        <h2 className="text-2xl font-semibold text-white mb-4">
+                            <i className="fab fa-youtube mr-3"></i>
+                            YouTube Video URL
+                        </h2>
+                        <div className="space-y-4">
+                            <input
+                                type="url"
+                                value={youtubeUrl}
+                                onChange={(e) => setYoutubeUrl(e.target.value)}
+                                placeholder="https://h.youtube.com/watch?v=..."
+                                className="w-full glass-input text-white placeholder-white/50 px-6 py-4 rounded-2xl text-lg"
+                            />
+                            <p className="text-white/70 text-sm">
+                                <i className="fas fa-info-circle mr-2"></i>
+                                Supports YouTube, YouTube Music, and other platforms
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Convert Button */}
+                    <div className="text-center mb-8">
+                        <button
+                            onClick={convertYouTube}
+                            disabled={!youtubeUrl.trim() || isConverting}
+                            className="liquid-button text-white text-lg font-semibold py-4 px-12 rounded-2xl disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isConverting ? (
+                                <>
+                                    <i className="fas fa-spinner fa-spin mr-3"></i>
+                                    Converting...
+                                </>
+                            ) : (
+                                <>
+                                    <i className="fab fa-youtube mr-3"></i>
+                                    Convert to WAV
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    {/* Status */}
+                    {conversionStatus && (
+                        <div className="mb-8">
+                            <div className="liquid-glass p-4 rounded-xl text-center">
+                                <p className="text-white font-medium">{conversionStatus}</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Download Area */}
+                    {convertedFile && (
+                        <div className="mb-8">
+                            <h2 className="text-2xl font-semibold text-white mb-4">
+                                <i className="fas fa-download mr-3"></i>
+                                Download WAV File
+                            </h2>
+                            <div className="liquid-glass-card p-6 rounded-xl">
+                                <div className="flex items-center justify-between mb-4">
+                                    <div className="flex items-center">
+                                        <i className="fas fa-file-audio text-white text-2xl mr-4"></i>
+                                        <div>
+                                            <h3 className="text-white font-semibold text-lg">
+                                                {convertedFile.title || 'YouTube Audio'}
+                                            </h3>
+                                            <p className="text-white/70">
+                                                {convertedFile.filename || 'youtube_audio.wav'}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={downloadConvertedFile}
+                                    className="w-full liquid-button text-white py-3 px-4 rounded-xl font-semibold"
+                                >
+                                    <i className="fas fa-download mr-2"></i>
+                                    Download WAV
+                                </button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Reset Button */}
+                    {(youtubeUrl || convertedFile) && (
+                        <div className="text-center">
+                            <button
+                                onClick={resetConverter}
+                                className="liquid-button text-white py-3 px-8 rounded-xl font-medium"
+                            >
+                                <i className="fas fa-redo mr-2"></i>
+                                Convert Another Video
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        }
+
+        ReactDOM.render(<ProfessionalMusicStudio />, document.getElementById('root'));
+    </script>
+</body>
+</html>

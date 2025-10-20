@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fix Download</title>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sunset-gradient {
+            background: linear-gradient(135deg, #ff7e5f 0%, #feb47b 25%, #ff6b6b 50%, #ffa726 75%, #ff7043 100%);
+        }
+        .sunset-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .sunset-button {
+            background: linear-gradient(135deg, #ff6b6b, #ffa726);
+            box-shadow: 0 4px 15px rgba(255, 107, 107, 0.4);
+        }
+        .sunset-button:hover {
+            background: linear-gradient(135deg, #ff5252, #ff9800);
+            box-shadow: 0 6px 20px rgba(255, 107, 107, 0.6);
+        }
+    </style>
+</head>
+<body class="sunset-gradient min-h-screen">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect } = React;
+
+        function DownloadFixer() {
+            const [jobs, setJobs] = useState([]);
+            const [selectedJob, setSelectedJob] = useState(null);
+
+            useEffect(() => {
+                fetchJobs();
+            }, []);
+
+            async function fetchJobs() {
+                try {
+                    const response = await fetch('http://localhost:8000/api/jobs');
+                    const data = await response.json();
+                    setJobs(data.jobs || []);
+                } catch (error) {
+                    console.error('Error fetching jobs:', error);
+                }
+            }
+
+            async function downloadStem(jobId, stemName, filename) {
+                try {
+                    const response = await fetch(`http://localhost:8000/api/download/${jobId}/${stemName}`);
+                    if (!response.ok) throw new Error('Download failed');
+                    
+                    const blob = await response.blob();
+                    const url = window.URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `${filename.replace(/\.[^/.]+$/, '')}_${stemName}.wav`;
+                    document.body.appendChild(a);
+                    a.click();
+                    window.URL.revokeObjectURL(url);
+                    document.body.removeChild(a);
+                } catch (error) {
+                    alert(`Download failed: ${error.message}`);
+                }
+            }
+
+            return (
+                <div className="min-h-screen p-8">
+                    <div className="max-w-6xl mx-auto">
+                        <h1 className="text-4xl font-bold text-center mb-8 text-white">
+                            🎵 Download Your Separated Stems
+                        </h1>
+                        
+                        <div className="grid gap-6">
+                            {jobs.filter(job => job.status === 'completed').map((job) => (
+                                <div key={job.id} className="sunset-glass p-6 rounded-2xl">
+                                    <h2 className="text-2xl font-bold text-white mb-4">
+                                        📁 {job.filename}
+                                    </h2>
+                                    <p className="text-white/80 mb-4">
+                                        Model: {job.model} | Created: {new Date(job.created_at).toLocaleString()}
+                                    </p>
+                                    
+                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                                        {Object.entries(job.stems).map(([stemName, stemInfo]) => {
+                                            const emoji = stemName === 'other' ? '🎼' : 
+                                                         stemName === 'vocals' ? '🎤' :
+                                                         stemName === 'drums' ? '🥁' :
+                                                         stemName === 'bass' ? '🎸' : '🎵';
+                                            
+                                            return (
+                                                <div key={stemName} className="bg-white/10 p-4 rounded-xl">
+                                                    <h3 className="font-bold text-white text-center mb-2">
+                                                        {emoji} {stemName.charAt(0).toUpperCase() + stemName.slice(1)}
+                                                    </h3>
+                                                    <p className="text-white/80 text-sm text-center mb-3">
+                                                        {(stemInfo.size / 1024 / 1024).toFixed(2)} MB
+                                                    </p>
+                                                    <button 
+                                                        onClick={() => downloadStem(job.id, stemName, job.filename)}
+                                                        className="w-full sunset-button text-white py-2 px-4 rounded-lg font-bold hover:scale-105 transition-all duration-300"
+                                                    >
+                                                        📥 Download
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                        
+                        {jobs.filter(job => job.status === 'completed').length === 0 && (
+                            <div className="text-center text-white/80">
+                                <p>No completed jobs found. Try uploading an audio file first!</p>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            );
+        }
+
+        ReactDOM.render(<DownloadFixer />, document.getElementById('root'));
+    </script>
+</body>
+</html>

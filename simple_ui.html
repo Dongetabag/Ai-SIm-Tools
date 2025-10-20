@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Stem Separator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sunset-gradient {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 25%, #48dbfb 50%, #ff9ff3 75%, #54a0ff 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        .sunset-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sunset-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .sunset-button {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            transition: all 0.3s ease;
+        }
+        
+        .sunset-button:hover {
+            background: linear-gradient(45deg, #feca57, #ff6b6b);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+    </style>
+</head>
+<body class="sunset-gradient min-h-screen">
+    <div class="min-h-screen p-6 flex items-center justify-center">
+        <div class="max-w-4xl w-full">
+            <div class="sunset-card rounded-3xl p-8 shadow-2xl">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-6 floating">🎵</div>
+                    <h1 class="text-5xl font-bold bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 bg-clip-text text-transparent mb-4">
+                        AI Stem Separator
+                    </h1>
+                    <p class="text-xl text-gray-700 font-medium mb-4">
+                        Separate vocals, drums, bass, and other instruments using AI
+                    </p>
+                    <div class="flex justify-center space-x-2">
+                        <div class="w-3 h-3 bg-pink-400 rounded-full animate-pulse"></div>
+                        <div class="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                        <div class="w-3 h-3 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                        <div class="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style="animation-delay: 0.6s"></div>
+                    </div>
+                </div>
+
+                <!-- Upload Area -->
+                <div class="space-y-8">
+                    <div class="sunset-glass border-2 border-white/30 rounded-2xl p-12 text-center transition-all duration-300 hover:border-white/50">
+                        <div class="text-6xl mb-4 floating">📁</div>
+                        <h3 class="text-2xl font-bold text-white mb-4">
+                            Drop your audio file here or click to browse
+                        </h3>
+                        <p class="text-lg text-white/80 mb-6">
+                            Supports MP3, WAV, FLAC (max 100MB)
+                        </p>
+                        <input type="file" id="audioFile" accept="audio/*,.mp3,.wav,.flac" 
+                               class="hidden">
+                        <button onclick="document.getElementById('audioFile').click()" 
+                                class="sunset-button text-white py-4 px-8 rounded-2xl font-bold text-xl hover:scale-105 transition-all duration-300">
+                            Choose Audio File
+                        </button>
+                        <div class="flex justify-center space-x-2 mt-6">
+                            <span class="bg-white/20 rounded-full px-3 py-1 text-sm text-white">🎵 Music</span>
+                            <span class="bg-white/20 rounded-full px-3 py-1 text-sm text-white">🎤 Vocals</span>
+                            <span class="bg-white/20 rounded-full px-3 py-1 text-sm text-white">🥁 Drums</span>
+                        </div>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold text-white text-center">🤖 Choose AI Model</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer">
+                                <div class="font-bold text-lg text-white">HTDemucs (Recommended)</div>
+                                <div class="text-sm text-white/80">Fast, good quality</div>
+                            </div>
+                            <div class="sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer">
+                                <div class="font-bold text-lg text-white">HTDemucs Fine-tuned</div>
+                                <div class="text-sm text-white/80">Fine-tuned version</div>
+                            </div>
+                            <div class="sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer">
+                                <div class="font-bold text-lg text-white">MDX Extra</div>
+                                <div class="text-sm text-white/80">Best quality (slower)</div>
+                            </div>
+                            <div class="sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer">
+                                <div class="font-bold text-lg text-white">MDX Extra Q</div>
+                                <div class="text-sm text-white/80">Fast processing</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="text-center space-y-4">
+                        <button class="sunset-button text-white py-6 px-8 rounded-2xl font-bold text-xl w-full hover:scale-105 transition-all duration-300">
+                            🚀 Start Separation
+                        </button>
+                        
+                        <!-- API Info -->
+                        <div class="sunset-glass p-4 rounded-xl">
+                            <h4 class="text-lg font-bold text-white mb-2">📡 API Endpoints</h4>
+                            <div class="text-sm text-white/80 space-y-1">
+                                <div>• POST /api/separate - Upload and separate audio</div>
+                                <div>• GET /api/status/{job_id} - Check status</div>
+                                <div>• GET /api/download/{job_id}/{stem} - Download stems</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Simple file handling
+        document.getElementById('audioFile').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                console.log('Selected file:', file.name, file.size);
+                // You can add file upload logic here
+            }
+        });
+
+        // Add some interactivity
+        document.querySelectorAll('.sunset-glass').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>

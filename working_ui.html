@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Stem Separator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .sunset-gradient {
+            background: linear-gradient(135deg, #ff6b6b 0%, #feca57 25%, #48dbfb 50%, #ff9ff3 75%, #54a0ff 100%);
+            background-size: 400% 400%;
+            animation: gradientShift 15s ease infinite;
+        }
+        
+        .sunset-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+        
+        .sunset-glass {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes gradientShift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        
+        .floating {
+            animation: floating 3s ease-in-out infinite;
+        }
+        
+        @keyframes floating {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-10px); }
+        }
+        
+        .sunset-button {
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            transition: all 0.3s ease;
+        }
+        
+        .sunset-button:hover {
+            background: linear-gradient(45deg, #feca57, #ff6b6b);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(255, 107, 107, 0.4);
+        }
+    </style>
+</head>
+<body class="sunset-gradient min-h-screen">
+    <div class="min-h-screen p-6 flex items-center justify-center">
+        <div class="max-w-4xl w-full">
+            <div class="sunset-card rounded-3xl p-8 shadow-2xl">
+                <!-- Header -->
+                <div class="text-center mb-8">
+                    <div class="text-6xl mb-6 floating">🎵</div>
+                    <h1 class="text-5xl font-bold bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 bg-clip-text text-transparent mb-4">
+                        AI Stem Separator
+                    </h1>
+                    <p class="text-xl text-gray-700 font-medium mb-4">
+                        Separate vocals, drums, bass, and other instruments using AI
+                    </p>
+                    <div class="flex justify-center space-x-2">
+                        <div class="w-3 h-3 bg-pink-400 rounded-full animate-pulse"></div>
+                        <div class="w-3 h-3 bg-yellow-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                        <div class="w-3 h-3 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                        <div class="w-3 h-3 bg-purple-400 rounded-full animate-pulse" style="animation-delay: 0.6s"></div>
+                    </div>
+                </div>
+
+                <!-- Status Display -->
+                <div id="statusArea" class="hidden mb-6">
+                    <div id="statusMessage" class="p-4 rounded-xl text-center font-bold"></div>
+                </div>
+
+                <!-- Upload Area -->
+                <div id="uploadArea" class="space-y-8">
+                    <div id="fileDropArea" class="sunset-glass border-2 border-white/30 rounded-2xl p-12 text-center transition-all duration-300 hover:border-white/50">
+                        <div id="uploadIcon" class="text-6xl mb-4 floating">📁</div>
+                        <h3 id="uploadText" class="text-2xl font-bold text-white mb-4">
+                            Drop your audio file here or click to browse
+                        </h3>
+                        <p class="text-lg text-white/80 mb-6">
+                            Supports MP3, WAV, FLAC (max 100MB)
+                        </p>
+                        <input type="file" id="audioFile" accept="audio/*,.mp3,.wav,.flac" class="hidden">
+                        <button id="chooseFileBtn" onclick="document.getElementById('audioFile').click()" 
+                                class="sunset-button text-white py-4 px-8 rounded-2xl font-bold text-xl hover:scale-105 transition-all duration-300">
+                            Choose Audio File
+                        </button>
+                        <div class="flex justify-center space-x-2 mt-6">
+                            <span class="bg-white/20 rounded-full px-3 py-1 text-sm text-white">🎵 Music</span>
+                            <span class="bg-white/20 rounded-full px-3 py-1 text-sm text-white">🎤 Vocals</span>
+                            <span class="bg-white/20 rounded-full px-3 py-1 text-sm text-white">🥁 Drums</span>
+                        </div>
+                    </div>
+
+                    <!-- Model Selection -->
+                    <div class="space-y-4">
+                        <h3 class="text-xl font-bold text-white text-center">🤖 Choose AI Model</h3>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="model-option sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer" data-model="htdemucs">
+                                <div class="font-bold text-lg text-white">HTDemucs (Recommended)</div>
+                                <div class="text-sm text-white/80">Fast, good quality</div>
+                            </div>
+                            <div class="model-option sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer" data-model="htdemucs_ft">
+                                <div class="font-bold text-lg text-white">HTDemucs Fine-tuned</div>
+                                <div class="text-sm text-white/80">Fine-tuned version</div>
+                            </div>
+                            <div class="model-option sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer" data-model="mdx_extra">
+                                <div class="font-bold text-lg text-white">MDX Extra</div>
+                                <div class="text-sm text-white/80">Best quality (slower)</div>
+                            </div>
+                            <div class="model-option sunset-glass p-6 rounded-2xl border-2 border-white/30 hover:border-white/50 transition-all duration-300 cursor-pointer" data-model="mdx_extra_q">
+                                <div class="font-bold text-lg text-white">MDX Extra Q</div>
+                                <div class="text-sm text-white/80">Fast processing</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="text-center space-y-4">
+                        <button id="separateBtn" class="sunset-button text-white py-6 px-8 rounded-2xl font-bold text-xl w-full hover:scale-105 transition-all duration-300" disabled>
+                            🚀 Start Separation
+                        </button>
+                        
+                        <!-- API Info -->
+                        <div class="sunset-glass p-4 rounded-xl">
+                            <h4 class="text-lg font-bold text-white mb-2">📡 API Endpoints</h4>
+                            <div class="text-sm text-white/80 space-y-1">
+                                <div>• POST /api/separate - Upload and separate audio</div>
+                                <div>• GET /api/status/{job_id} - Check status</div>
+                                <div>• GET /api/download/{job_id}/{stem} - Download stems</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Download Area -->
+                <div id="downloadArea" class="hidden space-y-6">
+                    <h3 class="text-2xl font-bold text-white text-center">🎵 Download Separated Stems</h3>
+                    <div id="stemsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        <!-- Stems will be populated here -->
+                    </div>
+                    <div class="text-center">
+                        <button onclick="resetForm()" class="sunset-glass text-white py-4 px-8 rounded-2xl font-bold text-lg hover:scale-105 transition-all duration-300">
+                            🔄 Process Another File
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let selectedFile = null;
+        let selectedModel = 'htdemucs';
+        let currentJobId = null;
+
+        // File handling
+        document.getElementById('audioFile').addEventListener('change', function(e) {
+            selectedFile = e.target.files[0];
+            if (selectedFile) {
+                updateUploadArea(selectedFile);
+                updateSeparateButton();
+            }
+        });
+
+        // Model selection
+        document.querySelectorAll('.model-option').forEach(option => {
+            option.addEventListener('click', function() {
+                document.querySelectorAll('.model-option').forEach(opt => {
+                    opt.classList.remove('border-pink-400', 'bg-gradient-to-br', 'from-pink-100', 'to-yellow-100');
+                    opt.classList.add('border-white/30');
+                });
+                
+                this.classList.remove('border-white/30');
+                this.classList.add('border-pink-400', 'bg-gradient-to-br', 'from-pink-100', 'to-yellow-100');
+                
+                selectedModel = this.dataset.model;
+            });
+        });
+
+        // Separate button
+        document.getElementById('separateBtn').addEventListener('click', async function() {
+            if (!selectedFile) return;
+            
+            await uploadAndSeparate();
+        });
+
+        function updateUploadArea(file) {
+            const uploadIcon = document.getElementById('uploadIcon');
+            const uploadText = document.getElementById('uploadText');
+            const chooseFileBtn = document.getElementById('chooseFileBtn');
+            
+            uploadIcon.textContent = '✅';
+            uploadText.textContent = `Selected: ${file.name}`;
+            chooseFileBtn.textContent = `Change File (${(file.size / 1024 / 1024).toFixed(2)} MB)`;
+        }
+
+        function updateSeparateButton() {
+            const btn = document.getElementById('separateBtn');
+            btn.disabled = !selectedFile;
+            btn.style.opacity = selectedFile ? '1' : '0.5';
+        }
+
+        async function uploadAndSeparate() {
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+            formData.append('model', selectedModel);
+
+            showStatus('Uploading file...', 'processing');
+
+            try {
+                const response = await fetch('http://localhost:8000/api/separate', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                const result = await response.json();
+                currentJobId = result.job_id;
+                
+                showStatus('Processing audio... This may take a few minutes.', 'processing');
+                pollStatus();
+                
+            } catch (error) {
+                showStatus(`Upload failed: ${error.message}`, 'error');
+            }
+        }
+
+        async function pollStatus() {
+            if (!currentJobId) return;
+
+            try {
+                const response = await fetch(`http://localhost:8000/api/status/${currentJobId}`);
+                const data = await response.json();
+                
+                console.log('Status update:', data); // Debug log
+                
+                if (data.status === 'completed') {
+                    showStatus('Separation completed!', 'success');
+                    showDownloadArea(data.stems);
+                } else if (data.status === 'failed') {
+                    showStatus(`Processing failed: ${data.error}`, 'error');
+                } else if (data.status === 'processing') {
+                    showStatus('Processing audio... This may take a few minutes.', 'processing');
+                    setTimeout(pollStatus, 2000);
+                } else {
+                    // Handle unknown status
+                    showStatus(`Unknown status: ${data.status}`, 'error');
+                }
+            } catch (error) {
+                console.error('Status check error:', error); // Debug log
+                showStatus('Failed to check status', 'error');
+            }
+        }
+
+        function showStatus(message, type) {
+            const statusArea = document.getElementById('statusArea');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            statusMessage.textContent = message;
+            statusMessage.className = `p-4 rounded-xl text-center font-bold ${
+                type === 'error' ? 'bg-red-100 text-red-700' :
+                type === 'success' ? 'bg-green-100 text-green-700' :
+                'bg-blue-100 text-blue-700'
+            }`;
+            
+            statusArea.classList.remove('hidden');
+        }
+
+        function showDownloadArea(stems) {
+            document.getElementById('uploadArea').classList.add('hidden');
+            document.getElementById('downloadArea').classList.remove('hidden');
+            
+            const stemsGrid = document.getElementById('stemsGrid');
+            stemsGrid.innerHTML = '';
+            
+            Object.entries(stems).forEach(([stemName, stemInfo]) => {
+                const stemDiv = document.createElement('div');
+                stemDiv.className = 'sunset-glass p-6 rounded-2xl hover:scale-105 transition-all duration-300';
+                
+                const emoji = stemName === 'other' ? '🎼' : 
+                             stemName === 'vocals' ? '🎤' :
+                             stemName === 'drums' ? '🥁' :
+                             stemName === 'bass' ? '🎸' : '🎵';
+                
+                stemDiv.innerHTML = `
+                    <div class="flex items-center justify-between mb-4">
+                        <h4 class="font-bold text-lg text-white capitalize">${emoji} ${stemName}</h4>
+                        <span class="text-sm text-white/80 bg-white/20 rounded-full px-3 py-1">
+                            ${(stemInfo.size / 1024 / 1024).toFixed(2)} MB
+                        </span>
+                    </div>
+                    <button onclick="downloadStem('${stemName}')" 
+                            class="w-full sunset-button text-white py-3 px-4 rounded-xl font-bold hover:scale-105 transition-all duration-300">
+                        📥 Download
+                    </button>
+                `;
+                
+                stemsGrid.appendChild(stemDiv);
+            });
+        }
+
+        async function downloadStem(stemName) {
+            if (!currentJobId) return;
+            
+            try {
+                const response = await fetch(`http://localhost:8000/api/download/${currentJobId}/${stemName}`);
+                if (!response.ok) throw new Error('Download failed');
+                
+                const blob = await response.blob();
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${selectedFile.name.replace(/\.[^/.]+$/, '')}_${stemName}.wav`;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            } catch (error) {
+                alert('Download failed');
+            }
+        }
+
+        function resetForm() {
+            selectedFile = null;
+            currentJobId = null;
+            document.getElementById('audioFile').value = '';
+            document.getElementById('uploadArea').classList.remove('hidden');
+            document.getElementById('downloadArea').classList.add('hidden');
+            document.getElementById('statusArea').classList.add('hidden');
+            updateSeparateButton();
+            
+            // Reset upload area
+            document.getElementById('uploadIcon').textContent = '📁';
+            document.getElementById('uploadText').textContent = 'Drop your audio file here or click to browse';
+            document.getElementById('chooseFileBtn').textContent = 'Choose Audio File';
+        }
+
+        // Drag and drop
+        const dropArea = document.getElementById('fileDropArea');
+        
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('border-pink-400', 'bg-gradient-to-br', 'from-pink-50', 'to-yellow-50');
+        });
+        
+        dropArea.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('border-pink-400', 'bg-gradient-to-br', 'from-pink-50', 'to-yellow-50');
+        });
+        
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('border-pink-400', 'bg-gradient-to-br', 'from-pink-50', 'to-yellow-50');
+            
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                selectedFile = files[0];
+                document.getElementById('audioFile').files = files;
+                updateUploadArea(selectedFile);
+                updateSeparateButton();
+            }
+        });
+
+        // Initialize
+        updateSeparateButton();
+        
+        // Add hover effects
+        document.querySelectorAll('.sunset-glass').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'scale(1.02)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
