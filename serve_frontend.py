@@ -9,7 +9,7 @@ import webbrowser
 import os
 from pathlib import Path
 
-PORT = 8080
+PORT = 8081
 
 class CustomHTTPRequestHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
@@ -31,7 +31,7 @@ def main():
     with socketserver.TCPServer(("", PORT), CustomHTTPRequestHandler) as httpd:
         print(f"🎵 AISim Tools Frontend Server")
         print(f"📱 Frontend: http://localhost:{PORT}")
-        print(f"🔗 API Server: http://localhost:8000")
+        print(f"🔗 API Server: http://localhost:8001")
         print(f"🛑 Press Ctrl+C to stop")
         print()
         

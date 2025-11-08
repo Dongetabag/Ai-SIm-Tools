@@ -387,8 +387,8 @@ async def separate_audio(
         jobs[job_id] = job
         
         # Start background task with AI analysis
-        background_tasks.add_task(process_audio_with_ai, job_id, str(file_path), instruments, ai_analysis)
-        
+        background_tasks.add_task(process_audio_with_ai, job_id, str(file_path), instruments, ai_analysis, audio_format, quality)
+
         return {"job_id": job_id, "message": "AI-enhanced separation started"}
         
     except Exception as e:
@@ -1266,4 +1266,4 @@ async def optimize_prompt(
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8001)
