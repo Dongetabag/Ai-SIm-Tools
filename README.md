@@ -2,6 +2,24 @@
 
 A comprehensive AI-powered platform for audio separation, YouTube conversion, PDF processing, image enhancement, video generation, and AI analysis with smart visual indicators and real-time progress tracking.
 
+## 🚀 Quick Start
+
+**Run the app locally on non-conflicting ports:**
+
+```bash
+./start_app.sh
+```
+
+Then visit: **http://localhost:8081**
+
+- **Frontend:** http://localhost:8081
+- **API:** http://localhost:8001
+- **API Docs:** http://localhost:8001/docs
+
+For detailed setup instructions, see [SETUP_GUIDE.md](SETUP_GUIDE.md)
+
+---
+
 ## 🚀 Features
 
 ### 🎵 AI Audio Separation
