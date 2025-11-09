@@ -15,6 +15,10 @@ import re
 from io import BytesIO
 import base64
 import json
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 from fastapi import FastAPI, File, UploadFile, HTTPException, BackgroundTasks, Form
 from fastapi.responses import FileResponse, JSONResponse
